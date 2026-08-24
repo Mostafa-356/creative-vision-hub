@@ -1,4 +1,4 @@
-import { motion, useReducedMotion } from "motion/react";
+import { motion, useReducedMotion, type Variants } from "motion/react";
 import portrait from "@/assets/portrait-dev.png";
 import { Magnetic } from "@/components/motion-text";
 import { Parallax } from "@/components/reveal";
@@ -9,28 +9,55 @@ const uniqueTools = Array.from(new Set(tools));
 const WORD_BEFORE = ["P", "o", "r", "t", "f"];
 const WORD_AFTER = ["l", "i", "o"];
 
+/** Shared easing so every hero element settles on the same curve. */
+const EASE = [0.16, 1, 0.3, 1] as const;
+
 export function Hero() {
   const reduce = useReducedMotion();
 
-  const letter = {
-    hidden: { y: "120%", opacity: 0, rotate: 8, scale: 0.9 },
-    show: (i: number) => ({
-      y: "0%",
-      opacity: 1,
-      rotate: 0,
-      scale: 1,
+  // Parent orchestrates the stagger, so children don't each schedule
+  // their own delayed timer — one timeline, fewer wake-ups.
+  const wordmark: Variants = {
+    hidden: {},
+    show: {
       transition: reduce
         ? { duration: 0 }
-        : {
-            delay: 0.35 + i * 0.11,
-            duration: 1.1,
-            ease: [0.16, 1, 0.3, 1] as const,
-          },
-    }),
+        : { delayChildren: 0.2, staggerChildren: 0.06 },
+    },
   };
 
-  const pillDelay = 0.35 + WORD_BEFORE.length * 0.11;
+  // Transform + opacity only: both run on the compositor, so the giant
+  // display type never triggers layout or paint while it animates.
+  const letter: Variants = {
+    hidden: reduce ? { y: 0, opacity: 1 } : { y: "115%", opacity: 0 },
+    show: {
+      y: "0%",
+      opacity: 1,
+      transition: reduce ? { duration: 0 } : { duration: 0.9, ease: EASE },
+    },
+  };
 
+  // The stadium "o" scales on the X axis instead of animating `width`,
+  // which used to force a layout pass on every frame of the headline.
+  const pill: Variants = {
+    hidden: reduce ? { scaleX: 1, opacity: 1 } : { scaleX: 0.14, opacity: 0 },
+    show: {
+      scaleX: reduce ? 1 : [0.14, 1.1, 1],
+      opacity: 1,
+      transition: reduce
+        ? { duration: 0 }
+        : { duration: 1.05, ease: EASE, times: [0, 0.7, 1] },
+    },
+  };
+
+  const fadeUp = (delay: number, y = 16): Variants => ({
+    hidden: reduce ? { opacity: 1, y: 0 } : { opacity: 0, y },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: reduce ? { duration: 0 } : { delay, duration: 0.75, ease: EASE },
+    },
+  });
 
   return (
     <section id="top" className="dot-grid relative overflow-hidden px-4 pt-10 sm:px-6 lg:pt-14">
@@ -51,13 +78,13 @@ export function Hero() {
           aria-hidden
           className="flex w-full items-center justify-center overflow-hidden font-display leading-[0.8] font-extrabold tracking-[-0.05em] text-foreground"
           style={{ fontSize: "clamp(3.5rem, 15.5vw, 13rem)" }}
+          variants={wordmark}
           initial="hidden"
-          whileInView="show"
-          viewport={{ once: false, amount: 0.3 }}
+          animate="show"
         >
           {WORD_BEFORE.map((c, i) => (
             <span key={`b-${i}`} className="inline-block overflow-hidden pb-[0.06em]">
-              <motion.span className="inline-block" variants={letter} custom={i}>
+              <motion.span className="inline-block transform-gpu" variants={letter}>
                 {c}
               </motion.span>
             </span>
@@ -65,56 +92,42 @@ export function Hero() {
 
           {/* The stadium "o" */}
           <motion.span
-            className="mx-[0.06em] inline-block rounded-full border-[0.115em] border-current"
-            style={{ height: "0.52em" }}
-            variants={{
-              hidden: reduce
-                ? { width: "1.05em", opacity: 1 }
-                : { width: "0.16em", opacity: 0 },
-              show: {
-                width: reduce ? "1.05em" : ["0.16em", "1.18em", "1.05em"],
-                opacity: 1,
-                transition: reduce
-                  ? { duration: 0 }
-                  : {
-                      delay: pillDelay,
-                      duration: 1.35,
-                      ease: [0.16, 1, 0.3, 1],
-                      times: [0, 0.72, 1],
-                    },
-              },
-            }}
+            className="mx-[0.06em] inline-block origin-center transform-gpu rounded-full border-[0.115em] border-current"
+            style={{ height: "0.52em", width: "1.05em" }}
+            variants={pill}
           />
 
           {WORD_AFTER.map((c, i) => (
             <span key={`a-${i}`} className="inline-block overflow-hidden pb-[0.06em]">
-              <motion.span
-                className="inline-block"
-                variants={letter}
-                custom={WORD_BEFORE.length + 1 + i}
-              >
+              <motion.span className="inline-block transform-gpu" variants={letter}>
                 {c}
               </motion.span>
             </span>
           ))}
         </motion.div>
 
-
         <motion.p
           className="mx-auto mt-4 max-w-xl text-center text-sm text-muted-foreground sm:text-base"
-          initial={reduce ? false : { opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          variants={fadeUp(0.55)}
+          initial="hidden"
+          animate="show"
         >
           EHR platforms, telehealth and remote monitoring — built secure, HIPAA-aligned and fast.
         </motion.p>
 
         {/* Showcase card */}
         <motion.div
-          className="relative mt-8 sm:mt-10"
-          initial={reduce ? false : { opacity: 0, y: 60, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ delay: 0.45, duration: 1, ease: [0.16, 1, 0.3, 1] }}
+          className="relative mt-8 transform-gpu sm:mt-10"
+          variants={{
+            hidden: reduce ? { opacity: 1, y: 0 } : { opacity: 0, y: 48 },
+            show: {
+              opacity: 1,
+              y: 0,
+              transition: reduce ? { duration: 0 } : { delay: 0.35, duration: 0.95, ease: EASE },
+            },
+          }}
+          initial="hidden"
+          animate="show"
         >
           <div className="slide-card relative overflow-hidden rounded-[2rem] bg-brand-sky/25 p-3 sm:rounded-[2.5rem] sm:p-4">
             <div className="relative aspect-[16/10] overflow-hidden rounded-[1.5rem] bg-brand-sky/40 sm:rounded-[2rem]">
@@ -124,10 +137,12 @@ export function Hero() {
                   alt="Illustrated portrait of Mostafa Samir, a healthcare full-stack engineer"
                   width={1024}
                   height={1024}
-                  className="float-slow size-full object-cover object-top"
-                  initial={reduce ? false : { scale: 1.12 }}
+                  decoding="async"
+                  fetchPriority="high"
+                  className="float-slow size-full transform-gpu object-cover object-top"
+                  initial={reduce ? false : { scale: 1.1 }}
                   animate={{ scale: 1 }}
-                  transition={{ delay: 0.5, duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
+                  transition={{ delay: 0.35, duration: 1.2, ease: EASE }}
                 />
               </Parallax>
             </div>
@@ -137,9 +152,9 @@ export function Hero() {
         {/* Bottom row: scroll dot + year */}
         <motion.div
           className="relative mt-6 flex items-center justify-between gap-4"
-          initial={reduce ? false : { opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.95, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          variants={fadeUp(0.75, 18)}
+          initial="hidden"
+          animate="show"
         >
           <div className="flex flex-wrap items-center gap-3">
             <Magnetic strength={10}>
@@ -167,7 +182,7 @@ export function Hero() {
               className="press absolute left-1/2 hidden size-14 -translate-x-1/2 items-center justify-center rounded-full bg-card shadow-[var(--shadow-image)] edge sm:inline-flex"
             >
               <motion.span
-                className="block size-2 rounded-full bg-foreground"
+                className="block size-2 transform-gpu rounded-full bg-foreground"
                 animate={reduce ? {} : { y: [-3, 3, -3] }}
                 transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
               />
@@ -178,7 +193,7 @@ export function Hero() {
             2026
             <motion.span
               aria-hidden
-              className="inline-flex size-7 items-center justify-center rounded-full border-2 border-current text-xs sm:size-9 sm:text-sm"
+              className="inline-flex size-7 transform-gpu items-center justify-center rounded-full border-2 border-current text-xs sm:size-9 sm:text-sm"
               animate={reduce ? {} : { rotate: [0, 12, -12, 0] }}
               transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
             >

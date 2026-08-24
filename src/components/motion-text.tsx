@@ -82,7 +82,11 @@ export function CountUp({
   );
 }
 
-/** Element that leans toward the pointer — used on buttons and stickers. */
+/**
+ * Element that leans toward the pointer — used on buttons and stickers.
+ * The bounding box is measured once per hover and pointer moves are
+ * coalesced into a single rAF write, so no layout is read per event.
+ */
 export function Magnetic({
   children,
   strength = 14,
@@ -93,32 +97,81 @@ export function Magnetic({
   className?: string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
+  const rect = useRef<DOMRect | null>(null);
+  const frame = useRef(0);
+  const target = useRef({ x: 0, y: 0 });
+
+  const enabled = () =>
+    typeof window !== "undefined" &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches &&
+    !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const flush = () => {
+    frame.current = 0;
+    const el = ref.current;
+    if (!el) return;
+    el.style.transform = `translate3d(${target.current.x.toFixed(2)}px, ${target.current.y.toFixed(2)}px, 0)`;
+  };
+
+  const schedule = () => {
+    if (!frame.current) frame.current = requestAnimationFrame(flush);
+  };
+
+  useEffect(
+    () => () => {
+      if (frame.current) cancelAnimationFrame(frame.current);
+    },
+    [],
+  );
 
   return (
     <span
       ref={ref}
-      className={`inline-block will-change-transform ${className}`}
-      style={{ transition: "transform 0.35s cubic-bezier(0.22,1,0.36,1)" }}
-      onPointerMove={(event) => {
+      className={`inline-block ${className}`}
+      style={{
+        transform: "translate3d(0,0,0)",
+        transition: "transform 0.45s cubic-bezier(0.22,1,0.36,1)",
+      }}
+      onPointerEnter={(event) => {
+        if (!enabled()) return;
         const el = ref.current;
         if (!el) return;
-        const rect = el.getBoundingClientRect();
-        const x = (event.clientX - rect.left - rect.width / 2) / (rect.width / 2);
-        const y = (event.clientY - rect.top - rect.height / 2) / (rect.height / 2);
-        el.style.transition = "transform 0.12s linear";
-        el.style.transform = `translate(${x * strength}px, ${y * strength * 0.6}px)`;
+        rect.current = el.getBoundingClientRect();
+        el.style.willChange = "transform";
+        el.style.transition = "transform 0.18s cubic-bezier(0.22,1,0.36,1)";
+        void event;
+      }}
+      onPointerMove={(event) => {
+        const box = rect.current;
+        if (!box) return;
+        const x = (event.clientX - box.left - box.width / 2) / (box.width / 2);
+        const y = (event.clientY - box.top - box.height / 2) / (box.height / 2);
+        target.current = {
+          x: Math.max(-1, Math.min(1, x)) * strength,
+          y: Math.max(-1, Math.min(1, y)) * strength * 0.6,
+        };
+        schedule();
       }}
       onPointerLeave={() => {
+        rect.current = null;
+        if (frame.current) {
+          cancelAnimationFrame(frame.current);
+          frame.current = 0;
+        }
         const el = ref.current;
         if (!el) return;
-        el.style.transition = "transform 0.5s cubic-bezier(0.2,1.3,0.4,1)";
-        el.style.transform = "translate(0,0)";
+        el.style.transition = "transform 0.6s cubic-bezier(0.2,1.25,0.4,1)";
+        el.style.transform = "translate3d(0,0,0)";
+        window.setTimeout(() => {
+          if (ref.current && !rect.current) ref.current.style.willChange = "auto";
+        }, 600);
       }}
     >
       {children}
     </span>
   );
 }
+
 
 /**
  * Character-by-character display reveal for the oversized editorial

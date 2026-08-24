@@ -65,23 +65,41 @@ export function useParallax<T extends HTMLElement>(strength = 40) {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     let frame = 0;
+    let visible = false;
+    let last = Number.NaN;
+
     const update = () => {
       frame = 0;
+      if (!visible) return;
       const rect = el.getBoundingClientRect();
       const viewport = window.innerHeight || 1;
       // -1 (below the fold) .. 1 (above the fold)
       const progress = (viewport / 2 - (rect.top + rect.height / 2)) / viewport;
-      el.style.transform = `translate3d(0, ${(progress * strength).toFixed(2)}px, 0)`;
+      const offset = Math.round(progress * strength * 100) / 100;
+      if (offset === last) return;
+      last = offset;
+      el.style.transform = `translate3d(0, ${offset}px, 0)`;
     };
     const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(update);
+      if (!frame && visible) frame = requestAnimationFrame(update);
     };
 
-    update();
+    // Only run the scroll math while the element is actually on screen.
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        visible = Boolean(entry?.isIntersecting);
+        el.style.willChange = visible ? "transform" : "auto";
+        if (visible) onScroll();
+      },
+      { rootMargin: "20% 0px" },
+    );
+    observer.observe(el);
+
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
     return () => {
       if (frame) cancelAnimationFrame(frame);
+      observer.disconnect();
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
@@ -101,8 +119,9 @@ export function Parallax({
 }) {
   const ref = useParallax<HTMLDivElement>(strength);
   return (
-    <div ref={ref} className={`will-change-transform ${className}`}>
+    <div ref={ref} className={className} style={{ transform: "translate3d(0,0,0)" }}>
       {children}
     </div>
   );
 }
+
