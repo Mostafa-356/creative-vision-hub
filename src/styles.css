@@ -483,11 +483,15 @@
 
 @utility float-slow {
   animation: floaty 7s ease-in-out infinite;
+  backface-visibility: hidden;
 }
 
 @utility drift-blob {
   animation: drift 18s ease-in-out infinite;
+  will-change: transform;
+  backface-visibility: hidden;
 }
+
 
 @utility spin-slow {
   animation: spinSlow 22s linear infinite;
