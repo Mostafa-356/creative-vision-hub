@@ -24,12 +24,34 @@ export function SiteNav() {
   const panelRef = useRef<HTMLDivElement>(null);
   const restoreFocus = useRef(false);
 
+  // Scroll state with hysteresis so the pill can't flicker at the threshold,
+  // and rAF-throttled so the sticky header never fights the scroll thread.
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    onScroll();
+    let ticking = false;
+    const read = () => {
+      ticking = false;
+      const y = window.scrollY;
+      setScrolled((prev) => (prev ? y > 12 : y > 40));
+    };
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(read);
+    };
+    read();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Desktop breakpoint hides the panel: close it so focus/inert stay consistent.
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const onChange = () => mq.matches && setOpen(false);
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
 
   const closeMenu = useCallback(() => {
     restoreFocus.current = true;

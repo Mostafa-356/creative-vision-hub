@@ -210,8 +210,12 @@
 
   html {
     scroll-behavior: smooth;
-    /* Never let a wide child create a horizontal scroll on small screens. */
-    overflow-x: hidden;
+    /* Never let a wide child create a horizontal scroll on small screens.
+       `clip` (not `hidden`) so it does NOT become a scroll container —
+       `overflow-x: hidden` here silently breaks `position: sticky` children. */
+    overflow-x: clip;
+    /* Anchor targets must clear the sticky header. */
+    scroll-padding-top: 6rem;
     scrollbar-color: color-mix(in oklab, var(--brand-orange) 70%, transparent)
       color-mix(in oklab, var(--color-border) 55%, transparent);
     scrollbar-width: thin;
@@ -222,8 +226,9 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
+    overflow-x: clip;
   }
+
 
   /* WebKit / Blink scrollbars — page and any scrollable element ---- */
   ::-webkit-scrollbar {
