@@ -80,8 +80,8 @@ export function SiteFooter() {
       </div>
 
       {/* giant wordmark */}
-      <div className="relative mt-12 overflow-hidden">
-        <p className="footer-wordmark px-2 text-center font-display leading-[0.78] whitespace-nowrap text-cream text-[24vw]">
+      <div className="relative mt-12 overflow-hidden pb-4">
+        <p className="footer-wordmark px-2 text-center font-display leading-[0.78] whitespace-nowrap text-cream text-[21vw]">
           CHOMPO
         </p>
         <div className="pointer-events-none absolute inset-0 text-signal [&_path]:fill-cream [&_circle]:fill-cream [&_rect]:fill-cream">
