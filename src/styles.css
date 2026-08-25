@@ -264,3 +264,9 @@
       26px 13px repeat-x,
     linear-gradient(#000, #000) 0 13px / 100% calc(100% - 26px) no-repeat;
 }
+
+@utility footer-wordmark {
+  -webkit-text-stroke: 3px var(--signal);
+  paint-order: stroke fill;
+  letter-spacing: -0.02em;
+}
