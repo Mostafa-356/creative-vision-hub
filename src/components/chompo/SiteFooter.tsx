@@ -84,9 +84,11 @@ export function SiteFooter() {
         <p className="footer-wordmark px-2 text-center font-display leading-[0.78] whitespace-nowrap text-cream text-[24vw]">
           CHOMPO
         </p>
-        <ChickenLegIcon className="pointer-events-none absolute bottom-[8%] left-[4%] w-[9vw] -rotate-12" />
-        <PizzaIcon className="pointer-events-none absolute top-[6%] left-[36%] w-[12vw] rotate-6" />
-        <SandwichIcon className="pointer-events-none absolute bottom-[4%] left-[62%] w-[11vw] -rotate-6" />
+        <div className="pointer-events-none absolute inset-0 text-signal [&_path]:fill-cream [&_circle]:fill-cream [&_rect]:fill-cream">
+          <ChickenLegIcon className="absolute bottom-[6%] left-[5%] w-[9vw] -rotate-12" />
+          <PizzaIcon className="absolute top-[2%] left-[34%] w-[12vw] rotate-6" />
+          <SandwichIcon className="absolute bottom-[2%] left-[60%] w-[11vw] -rotate-6" />
+        </div>
       </div>
     </footer>
   );
