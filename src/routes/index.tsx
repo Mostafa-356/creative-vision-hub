@@ -7,6 +7,7 @@ import { NewMeal } from "@/components/chompo/NewMeal";
 import { TypeSpiral } from "@/components/chompo/TypeSpiral";
 import { Reviews } from "@/components/chompo/Reviews";
 import { FlavorCta } from "@/components/chompo/FlavorCta";
+import { SiteFooter } from "@/components/chompo/SiteFooter";
 
 const TITLE = "CHOMPO | Fast Food & Delivery That Hits Different";
 const DESCRIPTION =
@@ -37,12 +38,7 @@ function Index() {
       <TypeSpiral />
       <Reviews />
       <FlavorCta />
-      <footer className="border-t-[3px] border-ink bg-ink px-4 py-10 text-center sm:px-6">
-        <p className="font-display text-4xl text-cream sm:text-6xl">CHOMPO</p>
-        <p className="mt-2 font-heavy text-[0.65rem] tracking-[0.24em] text-cream/70 uppercase">
-          The amazing food you ever tasted
-        </p>
-      </footer>
+      <SiteFooter />
     </main>
   );
 }
